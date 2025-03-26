@@ -4,7 +4,7 @@ import os
 
 # Inserisci qui il tuo token Telegram
 import os
-TOKEN = os.environ.get(" 7851920542:AAGkzz7IHfTOWIEZCKO8Xj-NlQm0i3Xknr8 ")
+TOKEN = os.getenv("7851920542:AAGkzz7IHfTOWIEZCKO8Xj-NlQm0i3Xknr8")
 
 # Funzione di avvio
 def start(update: Update, context: CallbackContext) -> None:
