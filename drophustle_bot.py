@@ -1,12 +1,20 @@
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from flask import Flask
+import threading
 import os
 
-# Inserisci qui il tuo token Telegram
-import os
-TOKEN = os.getenv("TOKEN")
+# Recupera il token dall'ambiente (Render → Environment Variables)
+TOKEN = os.getenv("BOT_TOKEN")
 
-# Funzione di avvio
+# Inizializzazione di Flask per mantenere viva l'app su Render
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "✅ DropHustler Bot is running!"
+
+# Funzione avvio
 def start(update: Update, context: CallbackContext) -> None:
     update.message.reply_text(
         "👋 Hi! Thank you for purchasing *Drop Hustle – Drop or Die*.\n\n"
@@ -15,24 +23,19 @@ def start(update: Update, context: CallbackContext) -> None:
         parse_mode='Markdown'
     )
 
-# Funzione per ricevere immagini e salvare ID utente
+# Ricezione screenshot
 def handle_photo(update: Update, context: CallbackContext) -> None:
     user = update.message.from_user
-    user_id = user.id
-    username = user.username or "NoUsername"
-    file_path = f"{user_id}_screenshot.jpg"
-
-    # Scarica la foto
     photo_file = update.message.photo[-1].get_file()
+    file_path = f"{user.id}_screenshot.jpg"
     photo_file.download(file_path)
 
-    # Salva l'ID e lo username in un file di log
-    with open("utenti_registrati.txt", "a", encoding='utf-8') as f:
-        f.write(f"{user_id} - @{username}\n")
+    with open("received_ids.txt", "a") as file:
+        file.write(f"{user.username} | {user.id}\n")
 
     update.message.reply_text("✅ Screenshot received! We’ll verify it manually and send you the PDF shortly.")
 
-# Comando per inviare il PDF manualmente
+# Comando admin per invio PDF
 def send_pdf(update: Update, context: CallbackContext) -> None:
     try:
         user_id = int(context.args[0])
@@ -41,24 +44,26 @@ def send_pdf(update: Update, context: CallbackContext) -> None:
         return
 
     if not os.path.isfile("technical_guide.pdf"):
-        update.message.reply_text("❌ PDF file not found. Make sure it's in the same folder as this script.")
+        update.message.reply_text("❌ PDF file not found.")
         return
 
     context.bot.send_document(chat_id=user_id, document=open("technical_guide.pdf", "rb"))
     update.message.reply_text("✅ PDF sent successfully!")
 
-# Avvio del bot
-def main():
+# Funzione per avviare il bot
+def run_bot():
     updater = Updater(TOKEN, use_context=True)
     dp = updater.dispatcher
 
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(MessageHandler(Filters.photo, handle_photo))
-    dp.add_handler(CommandHandler("sendpdf", send_pdf))  # /sendpdf 123456789
+    dp.add_handler(CommandHandler("sendpdf", send_pdf))
 
     updater.start_polling()
-    print("🤖 Bot is running...")
     updater.idle()
 
+# Avvio parallelo Flask + Bot
 if __name__ == '__main__':
-    main()
+    bot_thread = threading.Thread(target=run_bot)
+    bot_thread.start()
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
