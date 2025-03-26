@@ -43,7 +43,7 @@ def send_pdf(update: Update, context: CallbackContext) -> None:
         update.message.reply_text("⚠️ Please provide a valid Telegram ID.")
         return
 
-    if not os.path.isfile("technical_guide.pdf"):
+    if not os.path.isfile("technical_Guide.pdf"):
         update.message.reply_text("❌ PDF file not found.")
         return
 
