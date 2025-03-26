@@ -47,7 +47,7 @@ def send_pdf(update: Update, context: CallbackContext) -> None:
         update.message.reply_text("❌ PDF file not found.")
         return
 
-    context.bot.send_document(chat_id=user_id, document=open("technical_guide.pdf", "rb"))
+    context.bot.send_document(chat_id=user_id, document=open("technical_Guide.pdf", "rb"))
     update.message.reply_text("✅ PDF sent successfully!")
 
 # Funzione per avviare il bot
